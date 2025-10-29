@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "libretto",
+    "rust-venv",
+]
