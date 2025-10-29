@@ -1,0 +1,25 @@
+[build-system]
+requires = ["maturin>=1.8,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "libretto"
+version = "0.1.1"
+description = "A Simple and zero-dependency task runner for pyproject.toml."
+readme = "README.md"
+requires-python = ">=3.9"
+
+[project.urls]
+Repository = "https://github.com/AmaseCocoa/libretto"
+Issues = "https://github.com/AmaseCocoa/libretto/issues"
+
+[tool.maturin]
+bindings = "bin"
+strip = true
+
+[tool.libretto]
+venv = ".venv"
+
+[tool.libretto.tasks]
+build = "maturin build -m libretto/Cargo.toml"
+publish = "maturin publish -m libretto/Cargo.toml"
