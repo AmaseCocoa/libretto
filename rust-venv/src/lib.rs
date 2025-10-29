@@ -1,9 +1,6 @@
 use std::env;
 use std::path::Path;
-use std::process::Command;
-
-use std::io;
-use std::io::Write;
+use std::process::{Command, Stdio};
 
 mod dir;
 mod venv;
@@ -14,24 +11,18 @@ fn run_command_in_venv(
     args: &[&str],
     path: std::ffi::OsString,
 ) -> Result<(), errors::CommandError> {
-    let output = Command::new(script_path)
+    let status = Command::new(script_path)
         .args(args)
         .env("PATH", path) 
-        .output()
+        .stdout(Stdio::inherit())
+        .status()
         .map_err(|e| errors::CommandError::IoError { source: e })?;
 
-    io::stdout()
-        .write_all(&output.stdout)
-        .map_err(|e| errors::CommandError::IoError { source: e })?;
-    io::stderr()
-        .write_all(&output.stderr)
-        .map_err(|e| errors::CommandError::IoError { source: e })?;
-
-    if output.status.success() {
+    if status.success() {
         Ok(())
     } else {
 
-        match output.status.code() {
+        match status.code() {
             Some(code) => {
                 Err(errors::CommandError::NonZeroExit {
                     code,
