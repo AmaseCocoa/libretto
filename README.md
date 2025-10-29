@@ -62,7 +62,7 @@ greet = "echo Hello"
 You can run it with an additional argument:
 
 ```bash
-libretto greet John
+libretto greet -- John
 ```
 
 This will output:
