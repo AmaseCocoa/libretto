@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "libretto"
-version = "0.1.1"
+version = "0.2.0"
 description = "A Simple task runner for pyproject.toml, written in Rust."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -21,5 +21,6 @@ strip = true
 venv = ".venv"
 
 [tool.libretto.tasks]
+install = "maturin develop -m libretto/Cargo.toml"
 build = "maturin build -m libretto/Cargo.toml"
 publish = "maturin publish -m libretto/Cargo.toml"
