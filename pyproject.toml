@@ -5,7 +5,7 @@ build-backend = "maturin"
 [project]
 name = "libretto"
 version = "0.1.1"
-description = "A Simple and zero-dependency task runner for pyproject.toml."
+description = "A Simple task runner for pyproject.toml, written in Rust."
 readme = "README.md"
 requires-python = ">=3.9"
 
