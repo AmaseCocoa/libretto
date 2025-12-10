@@ -8,12 +8,26 @@ dynamic = ["version"]
 description = "A Simple task runner for pyproject.toml, written in Rust."
 readme = "README.md"
 requires-python = ">=3.9"
+License = "MIT"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Rust",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Build Tools",
+    "Environment :: Console",
+    "Operating System :: OS Independent",
+]
 
 [project.urls]
 Repository = "https://github.com/AmaseCocoa/libretto"
 Issues = "https://github.com/AmaseCocoa/libretto/issues"
 
 [tool.maturin]
+manifest-path = "app/Cargo.toml"
 bindings = "bin"
 strip = true
 
@@ -21,6 +35,5 @@ strip = true
 venv = ".venv"
 
 [tool.libretto.tasks]
-install = "maturin develop -m libretto/Cargo.toml"
-build = "maturin build -m libretto/Cargo.toml"
-publish = "maturin publish -m libretto/Cargo.toml"
+install = "maturin develop -m app/Cargo.toml"
+publish = "uv publish"

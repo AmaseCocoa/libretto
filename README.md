@@ -25,7 +25,7 @@ venv = ".venv"
 venv = ".venv"
 
 [tool.libretto.tasks]
-hello = "echo 'Hello, World!'"
+hello = "echo Hello, World!"
 ```
 
 ## Usage
@@ -36,6 +36,9 @@ To run a task, use the `libretto` command followed by the task name:
 
 ```bash
 libretto <task_name>
+
+# can execute with uv-task
+uv-task <task_name>
 ```
 
 For example, to run the `hello` task from the example above:

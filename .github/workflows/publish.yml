@@ -1,0 +1,132 @@
+name: Build wheels
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: linux
+            arch: x86_64
+            runs_on: ubuntu-latest
+            manylinux_image: quay.io/pypa/manylinux2014_x86_64
+          - os: linux
+            arch: aarch64
+            runs_on: ubuntu-latest
+            manylinux_image: quay.io/pypa/manylinux2014_aarch64
+          - os: windows
+            arch: x86_64
+            runs_on: windows-latest
+          - os: windows
+            arch: aarch64
+            runs_on: windows-11-arm
+          - os: macos
+            arch: x86_64
+            runs_on: macos-15-intel
+          - os: macos
+            arch: aarch64
+            runs_on: macos-latest
+
+    runs-on: ${{ matrix.runs_on }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Print environment
+        run: |
+          echo "OS=${{ matrix.os }} ARCH=${{ matrix.arch }} RUNS_ON=${{ matrix.runs_on }}"
+
+      - name: Setup Python (for non-manylinux steps)
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Build on manylinux container (Linux)
+        if: matrix.os == 'linux'
+        run: |
+          set -e
+          echo "Using manylinux image: ${{ matrix.manylinux_image }}"
+          docker run --rm \
+            -v "${{ github.workspace }}":/io \
+            -w /io \
+            ${{ matrix.manylinux_image }} /bin/bash -lc "\
+              python -m pip install --upgrade pip setuptools wheel && \
+              pip install maturin && \
+              # build (the wheel files will appear somewhere under the repo; we will collect them later)
+              maturin build --release --manylinux 2014 --strip --interpreter python3"
+          # collect wheels into ./dist
+          mkdir -p dist
+          find . -type f -name "*.whl" -exec cp -a '{}' dist/ \; || true
+
+      - name: Build on Windows (MSVC)
+        if: matrix.os == 'windows' && matrix.arch == 'x86_64'
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install maturin
+          maturin build --release --interpreter python3
+          mkdir -Force dist
+          Get-ChildItem -Path . -Recurse -Filter *.whl | ForEach-Object { Copy-Item $_.FullName -Destination dist }
+
+      - name: Build on Windows (aarch64) - self-hosted
+        if: matrix.os == 'windows' && matrix.arch == 'aarch64'
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install maturin
+          maturin build --release --interpreter python3
+          mkdir -Force dist
+          Get-ChildItem -Path . -Recurse -Filter *.whl | ForEach-Object { Copy-Item $_.FullName -Destination dist }
+
+      - name: Build on macOS
+        if: matrix.os == 'macos'
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install maturin
+          maturin build --release --interpreter python3
+          mkdir -p dist
+          find . -type f -name "*.whl" -exec cp -a '{}' dist/ \; || true
+
+      - name: List built artifacts
+        run: |
+          echo "Wheels in ./dist:"
+          ls -lah dist || true
+          find dist -maxdepth 1 -type f -name "*.whl" -print || true
+
+      - name: Upload wheels artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}-${{ matrix.arch }}
+          path: dist/*.whl
+
+  publish:
+    name: Publish wheels to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/libretto
+    permissions:
+      id-token: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./dist
+
+      - name: Show collected wheels
+        run: |
+          echo "Collected wheel files:"
+          find ./dist -type f -name "*.whl" -print || true
+          if [ -z "$(find ./dist -type f -name '*.whl' -print -quit)" ]; then
+            echo "No wheel files found. Nothing to publish."
+            exit 1
+          fi
+          
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

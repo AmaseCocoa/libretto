@@ -1,0 +1,19 @@
+[package]
+name = "app"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+clap = { version = "4.5.50", features = ["derive"] }
+pyproject-toml = "0.13.7"
+serde = "1.0.228"
+toml = "0.9.8"
+rust-venv = { path = "../rust-venv" }
+
+[[bin]]
+name = "libretto" 
+path = "src/main.rs" 
+
+[[bin]]
+name = "uv-task" 
+path = "src/main.rs"

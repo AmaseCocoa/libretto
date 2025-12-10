@@ -62,6 +62,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "app"
+version = "0.2.1"
+dependencies = [
+ "clap",
+ "pyproject-toml",
+ "rust-venv",
+ "serde",
+ "toml",
+]
+
+[[package]]
 name = "boxcar"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -284,17 +295,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
-]
-
-[[package]]
-name = "libretto"
-version = "0.2.0"
-dependencies = [
- "clap",
- "pyproject-toml",
- "rust-venv",
- "serde",
- "toml",
 ]
 
 [[package]]
