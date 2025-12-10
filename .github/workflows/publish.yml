@@ -13,11 +13,11 @@ jobs:
           - os: linux
             arch: x86_64
             runs_on: ubuntu-latest
-            manylinux_image: quay.io/pypa/manylinux_2_17_x86_64
+            manylinux_image: quay.io/pypa/manylinux2014_x86_64
           - os: linux
             arch: aarch64
             runs_on: ubuntu-latest
-            manylinux_image: quay.io/pypa/manylinux_2_17_aarch64
+            manylinux_image: quay.io/pypa/manylinux2014_aarch64
           - os: windows
             arch: x86_64
             runs_on: windows-latest
@@ -63,12 +63,12 @@ jobs:
             -v "${{ github.workspace }}":/io \
             -w /io \
             ${{ matrix.manylinux_image }} /bin/bash -lc "\
-              echo 'Container python:'; python3 --version || true; \
-              if ! python3 -m pip --version >/dev/null 2>&1; then \
-                python3 -m ensurepip --upgrade || true; \
+              echo 'Container python:'; python3.12 --version || true; \
+              if ! python3.12 -m pip --version >/dev/null 2>&1; then \
+                python3.12 -m ensurepip --upgrade || true; \
               fi; \
-              python3 -m pip install --upgrade pip setuptools wheel maturin || { echo 'pip install failed'; exit 1; }; \
-              python3 -m maturin build --release --manylinux 2014 --strip --interpreter python || { echo 'maturin build failed'; exit 1; }; \
+              python3.12 -m pip install --upgrade pip setuptools wheel maturin || { echo 'pip install failed'; exit 1; }; \
+              python3.12 -m maturin build --release --manylinux 2014 --strip --interpreter python || { echo 'maturin build failed'; exit 1; }; \
               mkdir -p dist; find . -type f -name \"*.whl\" -exec cp -a '{}' dist/ \; || true"
           ls -lah dist || true
 
