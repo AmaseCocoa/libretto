@@ -46,7 +46,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Build on manylinux container (Linux)
+      - name: Build on manylinux container (Linux) — use container's `python`
         if: matrix.os == 'linux'
         run: |
           set -e
@@ -55,13 +55,14 @@ jobs:
             -v "${{ github.workspace }}":/io \
             -w /io \
             ${{ matrix.manylinux_image }} /bin/bash -lc "\
-              python -m pip install --upgrade pip setuptools wheel && \
-              pip install maturin && \
-              # build (the wheel files will appear somewhere under the repo; we will collect them later)
-              maturin build --release --manylinux 2014 --strip --interpreter python3"
-          # collect wheels into ./dist
-          mkdir -p dist
-          find . -type f -name "*.whl" -exec cp -a '{}' dist/ \; || true
+              echo 'Container python:'; python --version || true; \
+              if ! python -m pip --version >/dev/null 2>&1; then \
+                python -m ensurepip --upgrade || true; \
+              fi; \
+              python -m pip install --upgrade pip setuptools wheel maturin || { echo 'pip install failed'; exit 1; }; \
+              python -m maturin build --release --manylinux 2014 --strip --interpreter python || { echo 'maturin build failed'; exit 1; }; \
+              mkdir -p dist; find . -type f -name \"*.whl\" -exec cp -a '{}' dist/ \; || true"
+          ls -lah dist || true
 
       - name: Build on Windows (MSVC)
         if: matrix.os == 'windows' && matrix.arch == 'x86_64'
@@ -73,7 +74,7 @@ jobs:
           mkdir -Force dist
           Get-ChildItem -Path . -Recurse -Filter *.whl | ForEach-Object { Copy-Item $_.FullName -Destination dist }
 
-      - name: Build on Windows (aarch64) - self-hosted
+      - name: Build on Windows (aarch64)
         if: matrix.os == 'windows' && matrix.arch == 'aarch64'
         shell: pwsh
         run: |
@@ -91,12 +92,6 @@ jobs:
           maturin build --release --interpreter python3
           mkdir -p dist
           find . -type f -name "*.whl" -exec cp -a '{}' dist/ \; || true
-
-      - name: List built artifacts
-        run: |
-          echo "Wheels in ./dist:"
-          ls -lah dist || true
-          find dist -maxdepth 1 -type f -name "*.whl" -print || true
 
       - name: Upload wheels artifact
         uses: actions/upload-artifact@v4
