@@ -46,6 +46,14 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Set up QEMU (for aarch64 emulation)
+        if: matrix.os == 'linux' && matrix.arch == 'aarch64'
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx (for aarch64 emulation)
+        if: matrix.os == 'linux' && matrix.arch == 'aarch64'
+        uses: docker/setup-buildx-action@v2
+
       - name: Build on manylinux container (Linux) — use container's `python`
         if: matrix.os == 'linux'
         run: |
@@ -55,12 +63,12 @@ jobs:
             -v "${{ github.workspace }}":/io \
             -w /io \
             ${{ matrix.manylinux_image }} /bin/bash -lc "\
-              echo 'Container python:'; python --version || true; \
-              if ! python -m pip --version >/dev/null 2>&1; then \
-                python -m ensurepip --upgrade || true; \
+              echo 'Container python:'; python3 --version || true; \
+              if ! python3 -m pip --version >/dev/null 2>&1; then \
+                python3 -m ensurepip --upgrade || true; \
               fi; \
-              python -m pip install --upgrade pip setuptools wheel maturin || { echo 'pip install failed'; exit 1; }; \
-              python -m maturin build --release --manylinux 2014 --strip --interpreter python || { echo 'maturin build failed'; exit 1; }; \
+              python3 -m pip install --upgrade pip setuptools wheel maturin || { echo 'pip install failed'; exit 1; }; \
+              python3 -m maturin build --release --manylinux 2014 --strip --interpreter python || { echo 'maturin build failed'; exit 1; }; \
               mkdir -p dist; find . -type f -name \"*.whl\" -exec cp -a '{}' dist/ \; || true"
           ls -lah dist || true
 
