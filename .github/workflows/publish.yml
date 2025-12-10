@@ -54,22 +54,45 @@ jobs:
         if: matrix.os == 'linux' && matrix.arch == 'aarch64'
         uses: docker/setup-buildx-action@v2
 
-      - name: Build on manylinux container (Linux) — use container's `python`
+      - name: Build on manylinux container
         if: matrix.os == 'linux'
         run: |
-          set -e
-          echo "Using manylinux image: ${{ matrix.manylinux_image }}"
-          docker run --rm \
+          set -euo pipefail
+          echo "Using manylinux image: ${{ matrix.manylinux_image }} (arch=${{ matrix.arch }})"
+          if [ "${{ matrix.arch }}" = "aarch64" ]; then
+            PLATFORM_FLAG="--platform=linux/arm64"
+          else
+            PLATFORM_FLAG=""
+          fi
+          docker run --rm $PLATFORM_FLAG \
             -v "${{ github.workspace }}":/io \
             -w /io \
             ${{ matrix.manylinux_image }} /bin/bash -lc "\
-              echo 'Container python:'; python3.12 --version || true; \
+              set -euo pipefail; \
+              echo '--- container python:'; python3.12 --version || true; \
+              # ensure pip exists for the container python \
               if ! python3.12 -m pip --version >/dev/null 2>&1; then \
+                echo 'pip not found for container python, trying ensurepip'; \
                 python3.12 -m ensurepip --upgrade || true; \
               fi; \
-              python3.12 -m pip install --upgrade pip setuptools wheel maturin || { echo 'pip install failed'; exit 1; }; \
-              python3.12 -m maturin build --release --manylinux 2014 --strip --interpreter python || { echo 'maturin build failed'; exit 1; }; \
-              mkdir -p dist; find . -type f -name \"*.whl\" -exec cp -a '{}' dist/ \; || true"
+              python3.12 -m pip install --upgrade pip setuptools wheel || { echo 'pip base install failed'; exit 1; }; \
+              # Install rustup (non-interactive) and make cargo available in PATH \
+              if ! command -v cargo >/dev/null 2>&1; then \
+                echo 'Installing rustup (Rust toolchain)'; \
+                curl -sSf https://sh.rustup.rs | sh -s -- -y || { echo 'rustup install failed'; exit 1; }; \
+                # rustup installs into $HOME/.cargo by default; source env to put cargo in PATH \
+                export PATH=\"$HOME/.cargo/bin:$PATH\"; \
+                rustup default stable || true; \
+              else \
+                echo 'cargo already present'; \
+              fi; \
+              # Confirm cargo is available \
+              echo 'cargo:'; cargo --version || true; \
+              # Install maturin into the container python and build with the container python interpreter \
+              python3.12 -m pip install --upgrade maturin || { echo 'install maturin failed'; exit 1; }; \
+              python3.12 -m maturin build --release --manylinux 2014 --strip --interpreter python3.12 || { echo 'maturin build failed'; exit 1; }; \
+              # collect wheels into ./dist \
+              mkdir -p dist; find . -type f -name '*.whl' -exec cp -a '{}' dist/ \\; || true"
           ls -lah dist || true
 
       - name: Build on Windows (MSVC)
